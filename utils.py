@@ -227,7 +227,7 @@ def generate_input_form(features, key_prefix="input"):
         'CRF01': [(1.0, 'Yes'), (2.0, 'No')],
         'HiPR03': [(0.0, 'Male / Not Applicable'), (1.0, 'Yes'), (2.0, 'No')],
         'LSSM01': [(1.0, 'Current Smoker'), (2.0, 'Former Smoker'), (3.0, 'Never Smoked')],
-        'OSMU07': [(1.0, 'Severe Trauma / No History Previous Fracture'), (2.0, 'Minimal Trauma (Fragility)')],
+        'OSMU07': [(1.0, 'Severe Trauma / No History of Previous Fracture'), (2.0, 'Minimal Trauma (Fragility)')],
         'OSMU13': [(1.0, 'Yes'), (2.0, 'No')],
         'OSMU16': [(1.0, 'No Difficulty'), (2.0, 'Some Difficulty'), (3.0, 'Much Difficulty')],
         'OSMU17': [(1.0, 'No Difficulty'), (2.0, 'Some Difficulty'), (3.0, 'Much Difficulty')],
