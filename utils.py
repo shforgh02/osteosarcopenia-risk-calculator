@@ -437,18 +437,35 @@ def predict_with_pkl(pkl_data, input_data, selected_model_name=None):
         st.error(f"Prediction error: {e}")
         return None, None, threshold
 
-def predict_with_stacking(pkl_data, input_data):
+def predict_with_stacking(pkl_data, input_data, selected_model_name=None):
     """
     Make a prediction using FlawlessCombinedModel stacking PKL.
     
-    The stacking model uses bone + muscle calibrated classifiers internally.
+    Args:
+        pkl_data: Loaded PKL containing trained_stacking_models dict
+        input_data: User input dictionary
+        selected_model_name: Name of selected model from dropdown (e.g. "Random Forest + XGBoost")
     """
     if pkl_data is None:
         return None, None, 0.5
     
-    model = pkl_data.get('model')  # FlawlessCombinedModel
+    # Get model from trained_stacking_models dict
+    trained_models = pkl_data.get('trained_stacking_models', {})
+    model_names = pkl_data.get('model_names', [])
+    
+    # If no model selected, use first (best) model
+    if selected_model_name is None and model_names:
+        selected_model_name = model_names[0]
+    
+    if not selected_model_name or selected_model_name not in trained_models:
+        st.error(f"Stacking model '{selected_model_name}' not found")
+        return None, None, 0.5
+    
+    model_info = trained_models[selected_model_name]
+    model = model_info.get('model')
+    threshold = model_info.get('threshold', 0.5)
+    
     preprocessor = pkl_data.get('preprocessor')
-    threshold = pkl_data.get('optimal_threshold', 0.5)
     selected_features = pkl_data.get('selected_features', [])
     
     if model is None or preprocessor is None:
