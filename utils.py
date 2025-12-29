@@ -411,7 +411,7 @@ def apply_custom_css():
             font-weight: 600 !important;
         }
         
-        /* Dropdowns - white background (all variants) */
+        /* Dropdowns - white background with visible text (iOS fix) */
         .stSelectbox > div > div,
         .stSelectbox > div > div > div,
         [data-baseweb="select"],
@@ -419,18 +419,33 @@ def apply_custom_css():
         [data-baseweb="popover"] > div,
         div[data-baseweb="select"] > div {
             background-color: white !important;
+            background: white !important;
+            color: #1e3a5f !important;
+            -webkit-appearance: none;
         }
         .stSelectbox > div > div {
             border: 1px solid #d1d5db !important;
             border-radius: 8px !important;
         }
+        /* Dropdown text visibility fix for iOS */
+        .stSelectbox [data-baseweb="select"] span,
+        .stSelectbox [data-baseweb="select"] div[aria-selected],
+        .stSelectbox div[data-baseweb="select"] > div > div {
+            color: #1e3a5f !important;
+            opacity: 1 !important;
+            -webkit-text-fill-color: #1e3a5f !important;
+        }
         
-        /* Number inputs - white background */
+        /* Number inputs - white background with visible text */
         .stNumberInput > div > div > input,
         .stNumberInput input {
             background-color: white !important;
+            background: white !important;
             border: 1px solid #d1d5db !important;
             border-radius: 8px !important;
+            color: #1e3a5f !important;
+            -webkit-text-fill-color: #1e3a5f !important;
+            opacity: 1 !important;
         }
         
         /* Result cards */
