@@ -11,9 +11,9 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import (
-    load_pkl, load_excel_sheet, PKL_PATHS, apply_custom_css,
+    load_pkl, load_excel_sheet, PKL_PATHS_FEATUREX, PKL_PATHS_STACKING, apply_custom_css,
     display_metrics_table_only, display_combined_metrics_table_only,
-    generate_input_form, predict_with_pkl, display_result
+    generate_input_form, predict_with_pkl, predict_with_stacking, display_result
 )
 
 st.set_page_config(page_title="Osteosarcopenia Combined", page_icon="🦴💪", layout="wide")
@@ -32,8 +32,8 @@ Predict **all 5 conditions** at once using the unified Feature X set:
 """)
 
 # Load PKL files for combined predictions
-pkl_osteosarc = load_pkl(PKL_PATHS['osteosarcopenia'])
-pkl_severe = load_pkl(PKL_PATHS['osteosarcopenias'])
+pkl_osteosarc = load_pkl(PKL_PATHS_FEATUREX['osteosarcopenia'])
+pkl_severe = load_pkl(PKL_PATHS_FEATUREX['osteosarcopenias'])
 
 # Load Excel sheets for metrics
 direct_sheets = {
@@ -123,9 +123,9 @@ if pkl_osteosarc:
             return (top15['Bone_Model'] + ' + ' + top15['Sarc_Model']).tolist()
         
         # Load all PKLs to get their model lists
-        pkl_osteoporosis = load_pkl(PKL_PATHS['osteoporosis'])
-        pkl_osteopenia = load_pkl(PKL_PATHS['osteopenia'])
-        pkl_sarcopenia = load_pkl(PKL_PATHS['sarcopenia'])
+        pkl_osteoporosis = load_pkl(PKL_PATHS_FEATUREX['osteoporosis'])
+        pkl_osteopenia = load_pkl(PKL_PATHS_FEATUREX['osteopenia'])
+        pkl_sarcopenia = load_pkl(PKL_PATHS_FEATUREX['sarcopenia'])
         
         # === BASE CONDITIONS (3 models) ===
         st.markdown("**Base Conditions:**")
@@ -225,46 +225,32 @@ if pkl_osteosarc:
                         display_result("Severe Osteosarcopenia", prob, is_pos, thresh)
                         results['severe_direct'] = is_pos
                 
-                # Row 3: Combined model predictions (Bone × Sarc)
-                st.markdown("### Combined Conditions (Bone × Sarc Models)")
-                st.caption("*These use your selected Bone + Sarcopenia combination*")
+                # Row 3: Combined model predictions (Stacking - FlawlessCombinedModel)
+                st.markdown("### Combined Conditions (Meta-Learner Stacking)")
+                st.caption("*Nature Medicine-grade models using calibrated joint probability*")
                 col1, col2 = st.columns(2)
                 
+                # Load stacking models
+                pkl_stacking_osteosarc = load_pkl(PKL_PATHS_STACKING['osteosarcopenia'])
+                pkl_stacking_severe = load_pkl(PKL_PATHS_STACKING['osteosarcopenias'])
+                
                 with col1:
-                    combined_data = combined_sheets.get('Osteosarcopenia')
-                    if combined_data is not None and not combined_data.empty and selected_combined_osteosarc:
-                        # Find the selected row
-                        combined_data['Combined_Name'] = combined_data['Bone_Model'] + ' + ' + combined_data['Sarc_Model']
-                        selected_row = combined_data[combined_data['Combined_Name'] == selected_combined_osteosarc]
-                        if not selected_row.empty:
-                            row = selected_row.iloc[0]
-                            st.markdown(f"**Selected Model:** {row['Bone_Model']} + {row['Sarc_Model']}")
-                            # Use the bone model for prediction
-                            bone_model = row['Bone_Model']
-                            prob, is_pos, _ = predict_with_pkl(pkl_osteoporosis, input_data, bone_model)
-                            if prob is not None:
-                                thresh = row.get('Threshold', 0.5)
-                                is_pos_combined = prob >= thresh
-                                display_result("Osteosarcopenia (Combined)", prob, is_pos_combined, thresh)
-                                results['osteosarcopenia_combined'] = is_pos_combined
+                    if pkl_stacking_osteosarc:
+                        prob, is_pos, thresh = predict_with_stacking(pkl_stacking_osteosarc, input_data)
+                        if prob is not None:
+                            display_result("Osteosarcopenia (Stacking)", prob, is_pos, thresh)
+                            results['osteosarcopenia_stacking'] = is_pos
+                    else:
+                        st.warning("Stacking model not found - run training script first")
                 
                 with col2:
-                    combined_data = combined_sheets.get('Severe Osteosarcopenia')
-                    if combined_data is not None and not combined_data.empty and selected_combined_severe:
-                        # Find the selected row
-                        combined_data['Combined_Name'] = combined_data['Bone_Model'] + ' + ' + combined_data['Sarc_Model']
-                        selected_row = combined_data[combined_data['Combined_Name'] == selected_combined_severe]
-                        if not selected_row.empty:
-                            row = selected_row.iloc[0]
-                            st.markdown(f"**Selected Model:** {row['Bone_Model']} + {row['Sarc_Model']}")
-                            # Use the bone model for prediction
-                            bone_model = row['Bone_Model']
-                            prob, is_pos, _ = predict_with_pkl(pkl_osteoporosis, input_data, bone_model)
-                            if prob is not None:
-                                thresh = row.get('Threshold', 0.5)
-                                is_pos_combined = prob >= thresh
-                                display_result("Severe Osteosarcopenia (Combined)", prob, is_pos_combined, thresh)
-                                results['severe_combined'] = is_pos_combined
+                    if pkl_stacking_severe:
+                        prob, is_pos, thresh = predict_with_stacking(pkl_stacking_severe, input_data)
+                        if prob is not None:
+                            display_result("Severe Osteosarcopenia (Stacking)", prob, is_pos, thresh)
+                            results['severe_stacking'] = is_pos
+                    else:
+                        st.warning("Stacking model not found - run training script first")
                 
                 # ====================================================================
                 # PARADOX DETECTION

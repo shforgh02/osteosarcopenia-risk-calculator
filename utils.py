@@ -7,6 +7,44 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
+from sklearn.linear_model import LogisticRegression
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.base import clone
+
+# ============================================================================
+# FLAWLESS COMBINED MODEL CLASS (Required for loading stacking PKLs)
+# ============================================================================
+
+class FlawlessCombinedModel:
+    """
+    Nature Medicine-Grade Combined Model for loading stacking PKL files.
+    This class must match the class definition used during model training.
+    """
+    def __init__(self, bone_model=None, muscle_model=None, resampler=None, use_stacking=True):
+        self.bone_model = bone_model
+        self.muscle_model = muscle_model
+        self.resampler = resampler
+        self.use_stacking = use_stacking
+        self.meta_learner = LogisticRegression(class_weight='balanced', max_iter=1000)
+        self.bone_calibrated_ = None
+        self.muscle_calibrated_ = None
+    
+    def predict_proba(self, X):
+        """Get calibrated combined probabilities."""
+        p_bone = self.bone_calibrated_.predict_proba(X)[:, 1]
+        p_muscle = self.muscle_calibrated_.predict_proba(X)[:, 1]
+        
+        if self.use_stacking:
+            X_meta = np.column_stack((p_bone, p_muscle))
+            return self.meta_learner.predict_proba(X_meta)
+        else:
+            p_joint = p_bone * p_muscle
+            return np.column_stack((1-p_joint, p_joint))
+    
+    def predict(self, X, threshold=0.5):
+        """Predict combined condition."""
+        proba = self.predict_proba(X)[:, 1]
+        return (proba >= threshold).astype(int)
 
 # ============================================================================
 # PATHS
@@ -18,12 +56,28 @@ PARENT_DIR = os.path.dirname(BASE_DIR)
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# PKL paths for Pages 1-3 (their own optimized features)
 PKL_PATHS = {
     'osteoporosis': os.path.join(BASE_DIR, 'models', 'osteoporosis_screening_model.pkl'),
     'osteopenia': os.path.join(BASE_DIR, 'models', 'Osteopenia_screening_model.pkl'),
     'sarcopenia': os.path.join(BASE_DIR, 'models', 'Sarcopenia_screening_model.pkl'),
     'osteosarcopenia': os.path.join(BASE_DIR, 'models', 'osteosarcopenia_combined_model.pkl'),
     'osteosarcopenias': os.path.join(BASE_DIR, 'models', 'osteosarcopenias_combined_model.pkl'),
+}
+
+# Feature X PKL paths for Page 4 (unified feature set)
+PKL_PATHS_FEATUREX = {
+    'osteoporosis': os.path.join(BASE_DIR, 'models', 'osteoporosis_featurex_model.pkl'),
+    'osteopenia': os.path.join(BASE_DIR, 'models', 'osteopenia_featurex_model.pkl'),
+    'sarcopenia': os.path.join(BASE_DIR, 'models', 'sarcopenia_featurex_model.pkl'),
+    'osteosarcopenia': os.path.join(BASE_DIR, 'models', 'osteosarcopenia_combined_model.pkl'),
+    'osteosarcopenias': os.path.join(BASE_DIR, 'models', 'osteosarcopenias_combined_model.pkl'),
+}
+
+# Stacking model paths (FlawlessCombinedModel - for combined Bone×Sarc predictions)
+PKL_PATHS_STACKING = {
+    'osteosarcopenia': os.path.join(BASE_DIR, 'models', 'osteosarcopenia_stacking_model.pkl'),
+    'osteosarcopenias': os.path.join(BASE_DIR, 'models', 'osteosarcopenias_stacking_model.pkl'),
 }
 
 EXCEL_PATH = os.path.join(BASE_DIR, 'data', 'Osteosarcopenia_Comprehensive_Results.xlsx')
@@ -369,6 +423,60 @@ def predict_with_pkl(pkl_data, input_data, selected_model_name=None):
         
     except Exception as e:
         st.error(f"Prediction error: {e}")
+        return None, None, threshold
+
+def predict_with_stacking(pkl_data, input_data):
+    """
+    Make a prediction using FlawlessCombinedModel stacking PKL.
+    
+    The stacking model uses bone + muscle calibrated classifiers internally.
+    """
+    if pkl_data is None:
+        return None, None, 0.5
+    
+    model = pkl_data.get('model')  # FlawlessCombinedModel
+    preprocessor = pkl_data.get('preprocessor')
+    threshold = pkl_data.get('optimal_threshold', 0.5)
+    selected_features = pkl_data.get('selected_features', [])
+    
+    if model is None or preprocessor is None:
+        st.error("Stacking model or preprocessor not found")
+        return None, None, threshold
+    
+    # Create input DataFrame
+    df = pd.DataFrame([input_data])
+    
+    try:
+        # Check if preprocessor expects more columns
+        if hasattr(preprocessor, 'feature_names_in_'):
+            required_cols = preprocessor.feature_names_in_
+            for c in required_cols:
+                if c not in df.columns:
+                    df[c] = np.nan
+        
+        # Transform
+        X_processed = preprocessor.transform(df)
+        
+        # Get feature names and filter to selected
+        try:
+            proc_names = preprocessor.get_feature_names_out()
+            X_df = pd.DataFrame(X_processed, columns=proc_names)
+            X_final = X_df[selected_features].values
+        except Exception:
+            X_final = X_processed
+        
+        # Predict using FlawlessCombinedModel
+        if hasattr(model, 'predict_proba'):
+            prob = model.predict_proba(X_final)[:, 1][0]
+        else:
+            prob = float(model.predict(X_final)[0])
+        
+        is_positive = prob >= threshold
+        
+        return prob, is_positive, threshold
+        
+    except Exception as e:
+        st.error(f"Stacking prediction error: {e}")
         return None, None, threshold
 
 # ============================================================================
