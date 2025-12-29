@@ -26,8 +26,8 @@ apply_custom_css()
 st.title("Osteosarcopenia Combined Screening")
 st.markdown("""
 Predict **all 5 conditions** at once using the unified Feature X set:
-- Osteoporosis, Osteopenia, Sarcopenia
-- Osteosarcopenia (Osteopenia + Sarcopenia)
+- Osteoporosis, Low Bone Mass, Sarcopenia
+- Osteosarcopenia (Low Bone Mass + Sarcopenia)
 - **Severe Osteosarcopenia** (Osteoporosis + Sarcopenia)
 """)
 
@@ -137,7 +137,7 @@ if pkl_osteosarc:
         
         with col2:
             osteopenia_models = get_model_list(pkl_osteopenia)
-            selected_osteopenia = st.selectbox("Osteopenia", osteopenia_models, key="sel_osteopenia") if osteopenia_models else None
+            selected_osteopenia = st.selectbox("Low Bone Mass", osteopenia_models, key="sel_osteopenia") if osteopenia_models else None
         
         with col3:
             sarcopenia_models = get_model_list(pkl_sarcopenia)
@@ -182,7 +182,7 @@ if pkl_osteosarc:
                 # Track results for paradox detection
                 results = {}
                 
-                # Row 1: Base conditions (Osteoporosis, Osteopenia, Sarcopenia)
+                # Row 1: Base conditions (Osteoporosis, Low Bone Mass, Sarcopenia)
                 st.markdown("### Base Conditions")
                 col1, col2, col3 = st.columns(3)
                 
@@ -199,10 +199,10 @@ if pkl_osteosarc:
                     if pkl_osteopenia:
                         prob, is_pos, thresh = predict_with_pkl(pkl_osteopenia, input_data, selected_osteopenia)
                         if prob is not None:
-                            display_result("Osteopenia", prob, is_pos, thresh)
+                            display_result("Low Bone Mass", prob, is_pos, thresh)
                             results['osteopenia'] = is_pos
                     else:
-                        st.warning("Osteopenia model not loaded")
+                        st.warning("Low Bone Mass model not loaded")
                 
                 with col3:
                     if pkl_sarcopenia:
@@ -257,11 +257,11 @@ if pkl_osteosarc:
                 # ====================================================================
                 paradoxes = []
                 
-                # Check Osteosarcopenia paradox (Osteopenia + Sarcopenia)
+                # Check Osteosarcopenia paradox (Low Bone Mass + Sarcopenia)
                 if results.get('osteopenia') and results.get('sarcopenia'):
                     if not results.get('osteosarcopenia_direct'):
                         paradoxes.append(
-                            "**Osteosarcopenia (Direct)**: Components (Osteopenia + Sarcopenia) are both POSITIVE, "
+                            "**Osteosarcopenia (Direct)**: Components (Low Bone Mass + Sarcopenia) are both POSITIVE, "
                             "but the direct model predicts NEGATIVE. This may be due to the higher threshold (0.686) "
                             "used by the direct model vs. the combined model approach."
                         )

@@ -39,9 +39,9 @@ This application predicts the risk of **bone and muscle health conditions** usin
 | Page | Condition | Description |
 |------|-----------|-------------|
 | **1. Osteoporosis** | Low bone density (BMD T-score of ≤ -2.5) | Uses dedicated screening model |
-| **2. Osteopenia** | Low bone density (BMD T-score of -2.5 to -1) | Uses dedicated screening model |
+| **2. Low Bone Mass** | Low bone density (BMD T-score ≤ −1.0) | Uses dedicated screening model |
 | **3. Sarcopenia** | Low muscle mass/function (According to EWGSOP2 Criteria) | Uses dedicated screening model |
-| **4. Osteosarcopenia** | Combined conditions (Osteopenia and Sarcopenia)| Predicts all 5 conditions at once |
+| **4. Osteosarcopenia** | Combined conditions (Low Bone Mass and Sarcopenia)| Predicts all 5 conditions at once |
 
 
 ---
@@ -74,7 +74,7 @@ Performance metrics are based on held-out test set evaluation.
 st.sidebar.success("Select a page above to start.")
 st.sidebar.markdown("---")
 st.sidebar.markdown("**📊 Data Source**")
-st.sidebar.markdown("Models trained on clinical screening data. Bushehr Elderly Health (BEH) Program")
+st.sidebar.markdown("Models were trained using data from the Bushehr Elderly Health (BEH) Program (n = 4,110).")
 st.sidebar.markdown("---")
 st.sidebar.markdown("**⚠️ Disclaimer**")
 st.sidebar.markdown("This tool is for research purposes only. Not for clinical diagnosis.")

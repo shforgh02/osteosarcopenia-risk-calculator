@@ -1,5 +1,5 @@
 """
-Page 2: Osteopenia Prediction
+Page 2: Low Bone Mass Prediction
 """
 
 import streamlit as st
@@ -14,16 +14,16 @@ from utils import (
     predict_with_pkl, display_result, get_threshold_for_model
 )
 
-st.set_page_config(page_title="Osteopenia - Risk Calculator", page_icon="🦴", layout="wide")
+st.set_page_config(page_title="Low Bone Mass - Risk Calculator", page_icon="🦴", layout="wide")
 apply_custom_css()
 
 # ============================================================================
-# OSTEOPENIA PAGE
+# LOW BONE MASS PAGE
 # ============================================================================
 
-st.title("Osteopenia Screening")
-st.markdown("Predict the risk of **Osteopenia** (mild bone density loss) using machine learning.")
-st.info("💡 Osteopenia uses **constrained optimization**: Maximize Sensitivity where Specificity ≥ 50%")
+st.title("Low Bone Mass Screening")
+st.markdown("Predict the risk of **Low Bone Mass** (T-score ≤ −1.0) using machine learning.")
+st.info("💡 Low Bone Mass uses **constrained optimization**: Maximize Sensitivity where Specificity ≥ 50%")
 
 pkl_data = load_pkl(PKL_PATHS['osteopenia'])
 
@@ -49,16 +49,16 @@ if pkl_data:
     
     input_data = generate_input_form(original_features, key_prefix="penia_input")
     
-    if st.button("Predict Osteopenia Risk", type="primary", use_container_width=True):
+    if st.button("Predict Low Bone Mass Risk", type="primary", use_container_width=True):
         with st.spinner("Calculating..."):
             prob, is_positive, threshold = predict_with_pkl(pkl_data, input_data, selected_model)
             
             if prob is not None:
                 st.markdown("---")
                 st.subheader("📋 Prediction Result")
-                display_result("Osteopenia", prob, is_positive, threshold)
+                display_result("Low Bone Mass", prob, is_positive, threshold)
             else:
                 st.error("Prediction failed.")
 
 else:
-    st.error("Could not load Osteopenia model.")
+    st.error("Could not load Low Bone Mass model.")
