@@ -227,7 +227,6 @@ if pkl_osteosarc:
                 
                 # Row 3: Combined model predictions (Stacking - FlawlessCombinedModel)
                 st.markdown("### Combined Conditions (Meta-Learner Stacking)")
-                st.caption("*Nature Medicine-grade models using calibrated joint probability*")
                 col1, col2 = st.columns(2)
                 
                 # Load stacking models

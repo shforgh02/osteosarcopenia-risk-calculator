@@ -85,12 +85,24 @@ EXCEL_PATH = os.path.join(BASE_DIR, 'data', 'Osteosarcopenia_Comprehensive_Resul
 # LOADING FUNCTIONS
 # ============================================================================
 
+class CustomUnpickler(pickle.Unpickler):
+    """Custom unpickler to handle FlawlessCombinedModel from different modules."""
+    def find_class(self, module, name):
+        # Map FlawlessCombinedModel from any module to our local class
+        if name == 'FlawlessCombinedModel':
+            return FlawlessCombinedModel
+        # Also handle ImbPipeline if needed
+        if name == 'Pipeline' and 'imblearn' in module:
+            from imblearn.pipeline import Pipeline as ImbPipeline
+            return ImbPipeline
+        return super().find_class(module, name)
+
 @st.cache_resource
 def load_pkl(path):
-    """Load a pickle file."""
+    """Load a pickle file with custom class mapping."""
     try:
         with open(path, 'rb') as f:
-            return pickle.load(f)
+            return CustomUnpickler(f).load()
     except FileNotFoundError:
         st.error(f"Model file not found: {path}")
         return None
